@@ -11,6 +11,7 @@ import { AuthContext } from "../contexts/AuthContext";
 import { LoginScreenProps } from "../types/navigationType";
 import { Feather } from "@expo/vector-icons";
 import { StackActions } from "@react-navigation/native";
+import { validateEmail, validatePassword } from "../helpers/validation";
 
 const LoginScreen = ({ navigation }: LoginScreenProps) => {
   const [email, setEmail] = useState("");
@@ -18,20 +19,39 @@ const LoginScreen = ({ navigation }: LoginScreenProps) => {
   const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
-  const authContext = useContext(AuthContext);
-  const login = authContext?.login;
+  const [emailError, setEmailError] = useState("");
+  const [passwordError, setPasswordError] = useState("");
+
+  const { login } = useContext(AuthContext);
+
+  const validateForm = () => {
+    const emailValidation = validateEmail(email);
+    const passwordValidation = validatePassword(password);
+
+    setEmailError(emailValidation.message || "");
+    setPasswordError(passwordValidation.message || "");
+
+    return emailValidation.valid && passwordValidation.valid;
+  };
 
   const handleLogin = async () => {
-    if (!login) {
-      setError("Authentication service unavailable");
-      return;
-    }
+    if (!validateForm()) return;
     const result = await login(email, password);
     if (!result.success) {
       setError(result.error || "Login failed");
     } else {
       navigation.dispatch(StackActions.replace("Home"));
     }
+  };
+
+  const handleEmailChange = (text: string) => {
+    setEmail(text);
+    if (emailError) setEmailError(validateEmail(text).message || "");
+  };
+
+  const handlePasswordChange = (text: string) => {
+    setPassword(text);
+    if (passwordError) setPasswordError(validatePassword(text).message || "");
   };
 
   return (
@@ -41,20 +61,27 @@ const LoginScreen = ({ navigation }: LoginScreenProps) => {
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
       <TextInput
-        style={styles.input}
+        style={[styles.input, emailError ? styles.inputError : null]}
         placeholder="Email"
         value={email}
-        onChangeText={setEmail}
+        onChangeText={handleEmailChange}
+        onBlur={() => setEmailError(validateEmail(email).message || "")}
         keyboardType="email-address"
         autoCapitalize="none"
       />
+      {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
 
-      <View style={styles.passwordContainer}>
+      <View
+        style={[
+          styles.passwordContainer,
+          passwordError ? styles.inputError : null,
+        ]}
+      >
         <TextInput
           style={styles.passwordInput}
           placeholder="Password"
           value={password}
-          onChangeText={setPassword}
+          onChangeText={handlePasswordChange}
           secureTextEntry={!showPassword}
         />
         <TouchableOpacity
@@ -64,6 +91,9 @@ const LoginScreen = ({ navigation }: LoginScreenProps) => {
           <Feather name={showPassword ? "eye-off" : "eye"} size={20} />
         </TouchableOpacity>
       </View>
+      {passwordError ? (
+        <Text style={styles.errorText}>{passwordError}</Text>
+      ) : null}
 
       <Button title="Login" onPress={handleLogin} />
 
@@ -118,6 +148,15 @@ const styles = StyleSheet.create({
     color: "blue",
     marginTop: 15,
     textAlign: "center",
+  },
+  inputError: {
+    borderColor: "red",
+  },
+  errorText: {
+    color: "red",
+    fontSize: 12,
+    marginBottom: 10,
+    marginTop: -5,
   },
 });
 

@@ -2,9 +2,13 @@ import React, { createContext, useState, useEffect, ReactNode } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { User, AuthContextType } from "../types/authType";
 
-export const AuthContext = createContext<AuthContextType | undefined>(
-  undefined
-);
+export const AuthContext = createContext<AuthContextType>({
+  user: null,
+  isLoading: true,
+  login: async () => ({ success: false, error: "Not implemented" }),
+  signup: async () => ({ success: false, error: "Not implemented" }),
+  logout: async () => {},
+});
 
 type AuthProviderProps = {
   children: ReactNode;
@@ -58,15 +62,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     try {
       if (!name || !email || !password) {
         return { success: false, error: "All fields are required" };
-      }
-      if (password.length < 6) {
-        return {
-          success: false,
-          error: "Password must be at least 6 characters",
-        };
-      }
-      if (!email.includes("@")) {
-        return { success: false, error: "Invalid email format" };
       }
 
       const userData = { name, email };
